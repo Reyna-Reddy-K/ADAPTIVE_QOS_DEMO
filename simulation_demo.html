@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FairSlice: Temporary Intent Module (simulation)</title>
+<style>
+:root{--bg:#f3e8ec;--card:#fff;--ink:#14201c;--mute:#5d6b66;--line:#d9dfdc;--ok:#0f7a4f;--bad:#b3261e;--warn:#9a6700;--I:#1a6fd4;--S:#7a4fd0;--B:#d98a1c;--okbg:#e1f3ea;--badbg:#fbe4e2;--warnbg:#fbf0d4;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1513;--card:#17211e;--ink:#e6efeb;--mute:#93a39c;--line:#2a3833;--ok:#4cd197;--bad:#ff8a80;--warn:#f0c04a;--I:#5aa2ff;--S:#a98aff;--B:#f0a93e;--okbg:#12362a;--badbg:#431a17;--warnbg:#3d3210;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:18px}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+.sub{color:var(--mute);font-size:13px}
+.sim{background:var(--warnbg);color:var(--warn);border:1px solid var(--warn);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.caption{background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:10px;margin-bottom:14px;min-height:46px;font-size:16px;display:flex;align-items:center}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:14px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{font-size:14px;margin:0 0 10px;font-weight:650}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+label b{color:var(--ink)}
+input[type=range]{width:100%}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:none;color:var(--ink);padding:7px 4px;cursor:pointer;font:inherit;font-size:13px}
+.seg button.on{background:var(--ink);color:var(--bg)}
+button.act{width:100%;margin-top:10px;padding:9px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:inherit;font-weight:600;cursor:pointer}
+button.alt{background:none;color:var(--ink)}
+button.dng{background:none;color:var(--bad);border-color:var(--bad)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--I);outline-offset:2px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+select{width:100%;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi .l{font-size:12px;color:var(--mute)}.kpi .v{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums}.kpi .n{font-size:12px;color:var(--mute)}
+.bad{color:var(--bad)}.good{color:var(--ok)}
+.bar{display:flex;height:30px;border-radius:6px;overflow:hidden;background:var(--line)}
+.bar div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:600;transition:width .4s;white-space:nowrap;overflow:hidden}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mute);margin-top:6px;flex-wrap:wrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+svg.ch{width:100%;height:130px;display:block}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-weight:700;font-size:13px}
+.PASS{background:var(--okbg);color:var(--ok)}.FAIL{background:var(--badbg);color:var(--bad)}.INCONCLUSIVE{background:var(--warnbg);color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+td,th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font-size:12px;padding:2px 8px;border-radius:6px}.chip.t{background:var(--okbg);color:var(--ok)}.chip.f{background:var(--badbg);color:var(--bad)}
+.dec{padding:8px 10px;border-radius:8px;font-size:13px;margin-top:10px;background:var(--bg)}
+#log{max-height:240px;overflow:auto;font-size:12.5px}
+#log div{display:grid;grid-template-columns:48px 170px 1fr;gap:8px;padding:3px 0;border-bottom:1px solid var(--line)}
+#log span:first-child{color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:700px){.two{grid-template-columns:1fr}}
+.cd{font-size:13px;color:var(--mute);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div><h1>FairSlice: Temporary Intent Module</h1>
+  <div class="sub">Temporary priority with fairness safeguards, verification, rollback and auto-expiry</div></div>
+  <span class="sim">SIMULATION MODE: not controlling live traffic</span>
+</header>
+<div class="caption" id="cap">Press “Run guided demo” for a hands-free walkthrough, or use the controls on the left.</div>
+
+<div class="grid">
+<aside>
+  <div class="card">
+    <h2>Demo controls</h2>
+    <button class="act" id="demo">Run guided demo</button>
+    <div class="row" style="margin-top:8px">
+      <button class="act alt" id="pp">Pause</button>
+      <button class="act alt" id="reset">Reset</button>
+    </div>
+    <label for="spd">Simulation speed</label>
+    <select id="spd"><option value="1">1× (1 tick per second)</option><option value="3">3×</option><option value="10">10×</option></select>
+  </div>
+  <div class="card">
+    <h2>Network scenario</h2>
+    <div class="seg" id="sc"><button data-s="normal">Normal</button><button data-s="congested" class="on">Congested</button><button data-s="severe">Severe</button></div>
+    <div class="sub" id="scd" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <h2>Temporary intent: prioritize work call</h2>
+    <label for="str">Requested strength: <b id="strv">0.8</b></label>
+    <input type="range" id="str" min="0.1" max="1" step="0.1" value="0.8">
+    <label for="dur">Duration: <b id="durv">60</b> s</label>
+    <input type="range" id="dur" min="30" max="300" step="10" value="60">
+    <button class="act" id="apply">Apply intent</button>
+    <div class="cd" id="cd">No active intent.</div>
+    <div class="dec" id="dec">Decision will appear here.</div>
+  </div>
+  <div class="card">
+    <h2>Fault test</h2>
+    <div class="sub">Bypasses the policy engine with harmful weights (I/S/B = 5/45/50) to prove the verifier rolls them back.</div>
+    <button class="act dng" id="inject">Inject harmful policy</button>
+  </div>
+</aside>
+
+<main>
+  <div class="kpis">
+    <div class="kpi"><div class="l">Interactive latency</div><div class="v" id="k-lat">-</div><div class="n">limit 80 ms</div></div>
+    <div class="kpi"><div class="l">Jitter</div><div class="v" id="k-jit">-</div><div class="n">limit 30 ms</div></div>
+    <div class="kpi"><div class="l">Packet loss</div><div class="v" id="k-loss">-</div><div class="n">limit 2 %</div></div>
+    <div class="kpi"><div class="l">Background throughput</div><div class="v" id="k-bg">-</div><div class="n" id="k-fl">floor -</div></div>
+    <div class="kpi"><div class="l">Fairness debt (background)</div><div class="v" id="k-debt">-</div><div class="n" id="k-pol">policy rev 0</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Bandwidth split <span class="sub" id="capn"></span></h2>
+    <div class="bar" id="alloc"></div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--I)"></i>Interactive</span>
+      <span><i class="dot" style="background:var(--S)"></i>Streaming</span>
+      <span><i class="dot" style="background:var(--B)"></i>Background</span>
+      <span id="wts"></span>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card"><h2>Latency (ms) with 80 ms limit</h2><svg class="ch" id="c1" viewBox="0 0 400 130" preserveAspectRatio="none"></svg></div>
+    <div class="card"><h2>Background Mbps with fairness floor</h2><svg class="ch" id="c2" viewBox="0 0 400 130" preserveAspectRatio="none"></svg></div>
+  </div>
+
+  <div class="card">
+    <h2>Verification <span id="vp"></span></h2>
+    <div id="vb" class="sub">No verification has run yet. Apply an intent to see before and after results.</div>
+  </div>
+
+  <div class="card">
+    <h2>Audit log</h2>
+    <div id="log"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="act alt" id="dl-j">Save audit_log.json</button>
+      <button class="act alt" id="dl-c">Save results.csv</button>
+    </div>
+  </div>
+</main>
+</div>
+</div>
+
+<script>
+// ---------- model (ported from the Python demo) ----------
+const THR={lat:80,jit:30,loss:2},FLOOR_PCT=.10,MAX_WI=65,DEBT_CAP=200,DECAY=.05,EVAL=5;
+const NORMAL={I:40,S:30,B:30};
+const SC={normal:[100,{I:8,S:25,B:30}],congested:[100,{I:8,S:25,B:120}],severe:[40,{I:8,S:40,B:80}]};
+const SCD={normal:"100 Mbps link, light background load.",congested:"100 Mbps link, large background download.",severe:"40 Mbps link, heavy demand from every group."};
+const G3=["I","S","B"];
+function alloc(cap,d,w){const a={I:0,S:0,B:0};let rem=cap,act=[...G3];
+  while(act.length){const tw=act.reduce((s,g)=>s+w[g],0);const sat=act.filter(g=>d[g]<=rem*w[g]/tw);
+    if(!sat.length){act.forEach(g=>a[g]=rem*w[g]/tw);break}
+    sat.forEach(g=>{a[g]=d[g];rem-=d[g]});act=act.filter(g=>!sat.includes(g))}
+  return a}
+function metrics(sc,w,t){const[cap,d]=SC[sc];const off=d.I+d.S+d.B,a=alloc(cap,d,w);
+  const p=Math.max(0,(off-cap)/cap),f=40/w.I;
+  const lat=15+150*p*f+Math.sin(t*1.7)*2;
+  const jit=Math.max(1,2+.12*(lat-15)+Math.cos(t*2.3)*.5);
+  const loss=Math.min(40,.1+p*f*.9);
+  return{lat,jit,loss,a,cap,off,floor:Math.min(d.B,FLOOR_PCT*cap)}}
+function win(sc,w,t0){const ms=[...Array(EVAL)].map((_,i)=>metrics(sc,w,t0+i));const av=f=>ms.reduce((s,m)=>s+f(m),0)/EVAL;
+  return{lat:av(m=>m.lat),jit:av(m=>m.jit),loss:av(m=>m.loss),B:av(m=>m.a.B),floor:ms[0].floor}}
+
+let S,hist,lastV,running=true,speed=1,timer,demoId=0;
+function fresh(){S={sc:"congested",t:0,rev:0,w:{...NORMAL},intent:null,debt:{I:0,S:0,B:0},audit:[],rows:[],n:0};hist=[];lastV=null}
+function log(ev,reason,decision,extra={}){const intent=extra.intent||(S.intent&&S.intent.id)||"-";delete extra.intent;
+  S.audit.push({sim_time_s:S.t,event:ev,intent,decision,reason,policy:{rev:S.rev,weights:{...S.w}},...extra})}
+function tick(){S.t++;const[cap,d]=SC[S.sc];const m=metrics(S.sc,S.w,S.t),tgt=alloc(cap,d,NORMAL);
+  G3.forEach(g=>{if(d[g]>0)S.debt[g]=Math.min(DEBT_CAP,Math.max(0,S.debt[g]+tgt[g]-m.a[g]))*(1-DECAY)});
+  checkExpiry();
+  S.rows.push([S.t,S.sc,S.rev,+m.lat.toFixed(1),+m.jit.toFixed(1),+m.loss.toFixed(2),+m.a.B.toFixed(1),+S.debt.B.toFixed(1)]);
+  hist.push({lat:m.lat,B:m.a.B,floor:m.floor,rev:S.rev});if(hist.length>90)hist.shift()}
+function checkExpiry(){const i=S.intent;if(i&&S.t>=i.exp){S.intent=null;S.rev++;S.w={...i.prev};
+  log("intent_expired","Intent expired. Previous normal policy restored.","expired",{intent:i.id});say("Intent expired. The previous normal policy has been restored automatically.");return true}return false}
+function verify(cand,prev){const pre=win(S.sc,prev,S.t),post=win(S.sc,cand,S.t);
+  const c={"latency ≤ 80":post.lat<=THR.lat,"jitter ≤ 30":post.jit<=THR.jit,"loss ≤ 2%":post.loss<=THR.loss,
+    "background floor":post.B>=pre.floor,"no latency regression":post.lat<=pre.lat*1.05,"no loss regression":post.loss<=pre.loss+.5};
+  const crit=["background floor","no latency regression","no loss regression"].filter(k=>!c[k]);
+  const verdict=crit.length?"FAIL":Object.values(c).every(Boolean)?"PASS":"INCONCLUSIVE";
+  return{verdict,pre,post,c,crit}}
+const wf=wi=>{const s=Math.round((100-wi)*.6);return{I:wi,S:s,B:100-wi-s}};
+function reject(why){log("intent_rejected",why,"rejected");return{rejected:true,msg:"Rejected: "+why}}
+function submit(kind,dur,str){
+  if(S.intent)return reject("an intent is already active (protects the saved rollback policy)");
+  S.n++;const iid="int-"+String(S.n).padStart(3,"0");
+  log("intent_submitted",`${kind}, ${dur}s, strength ${str}`,"received",{intent:iid});
+  let wi=Math.round(40+str*30),cons=false,msg="Temporary interactive priority applied within safety limits.";
+  if(wi>MAX_WI){wi=MAX_WI;cons=true;msg=`Strength reduced to the bounded maximum (Interactive weight ${MAX_WI}).`}
+  const w=wf(wi),m=metrics(S.sc,w,S.t);
+  if(m.a.B<m.floor)return reject("would push Background below its service floor");
+  if(m.lat>THR.lat){cons=true;msg+=" Latency is still above the limit: link capacity is the bottleneck."}
+  return apply(w,iid,dur,cons,msg)}
+function apply(w,iid,dur,cons,msg,injected=false){
+  const prev={...S.w},v=verify(w,prev);S.rev++;S.w={...w};
+  log(cons?"intent_constrained":"intent_accepted",msg,cons?"constrained":"accepted",{intent:iid,injected});
+  if(v.verdict==="FAIL"){S.rev++;S.w=prev;
+    log("verification_failed","critical: "+v.crit.join(", "),"fail",{intent:iid,pre:v.pre,post:v.post});
+    log("rollback_triggered","restored "+JSON.stringify(prev),"rolled_back",{intent:iid});
+    return{...v,rolled_back:true,msg}}
+  S.intent={id:iid,exp:S.t+dur,prev};
+  log("verification_"+v.verdict.toLowerCase(),`${v.verdict} over ${EVAL}-step simulated window`,v.verdict.toLowerCase(),{pre:v.pre,post:v.post});
+  return{...v,rolled_back:false,msg}}
+
+// ---------- UI ----------
+const $=id=>document.getElementById(id);
+const say=t=>{$("cap").textContent=t};
+const f1=x=>x.toFixed(1);
+function chart(el,key,limit,color,ymaxMin){
+  const W=400,H=130,n=Math.max(hist.length,2);const ymax=Math.max(ymaxMin,limit*1.2,...hist.map(h=>h[key]))*1.05;
+  const X=i=>i/(90-1)*W,Y=v=>H-6-(v/ymax)*(H-12);
+  const lim=hist.map((h,i)=>`${X(i).toFixed(1)},${Y(limit==="floor"?h.floor:limit).toFixed(1)}`).join(" ");
+  const pts=hist.map((h,i)=>`${X(i).toFixed(1)},${Y(h[key]).toFixed(1)}`).join(" ");
+  let marks="";hist.forEach((h,i)=>{if(i&&hist[i-1].rev!==h.rev)marks+=`<line x1="${X(i)}" x2="${X(i)}" y1="0" y2="${H}" stroke="var(--mute)" stroke-dasharray="3 3" stroke-width="1"/>`});
+  el.innerHTML=marks+`<polyline points="${lim}" fill="none" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" vector-effect="non-scaling-stroke"/>`}
+function render(){
+  const m=metrics(S.sc,S.w,S.t),w=S.w;
+  $("k-lat").textContent=f1(m.lat)+" ms";$("k-lat").className="v "+(m.lat>THR.lat?"bad":"good");
+  $("k-jit").textContent=f1(m.jit)+" ms";$("k-jit").className="v "+(m.jit>THR.jit?"bad":"good");
+  $("k-loss").textContent=m.loss.toFixed(2)+" %";$("k-loss").className="v "+(m.loss>THR.loss?"bad":"good");
+  $("k-bg").textContent=f1(m.a.B)+" Mbps";$("k-bg").className="v "+(m.a.B>=m.floor?"good":"bad");
+  $("k-fl").textContent="floor "+f1(m.floor)+" Mbps";
+  $("k-debt").textContent=f1(S.debt.B);$("k-pol").textContent=`policy rev ${S.rev} · t=${S.t}s`;
+  $("capn").textContent=`(${m.cap} Mbps link)`;
+  $("alloc").innerHTML=G3.map(g=>`<div style="width:${m.a[g]/m.cap*100}%;background:var(--${g})">${m.a[g]>7?f1(m.a[g]):""}</div>`).join("");
+  $("wts").textContent=`weights I/S/B = ${w.I}/${w.S}/${w.B}`;
+  chart($("c1"),"lat",THR.lat,"var(--I)",100);chart($("c2"),"B","floor","var(--B)",20);
+  $("cd").textContent=S.intent?`Active: ${S.intent.id}, expires in ${Math.max(0,S.intent.exp-S.t)} s. Rollback policy saved.`:"No active intent.";
+  $("scd").textContent=SCD[S.sc];
+  document.querySelectorAll("#sc button").forEach(b=>b.classList.toggle("on",b.dataset.s===S.sc));
+  $("log").innerHTML=[...S.audit].reverse().map(a=>`<div><span>${a.sim_time_s}s</span><span>${a.event}</span><span>${a.decision}${a.injected?" (injected)":""}</span></div>`).join("")||"<span class='sub'>No events yet.</span>";
+  if(lastV)showV(lastV)}
+function showV(r){
+  $("vp").innerHTML=`<span class="pill ${r.verdict}">${r.verdict}</span> <span class="sub">rollback: ${r.rolled_back?"TRIGGERED":"not needed"}</span>`;
+  const rows=[["Latency ms","lat"],["Jitter ms","jit"],["Loss %","loss"],["Background Mbps","B"]].map(([l,k])=>`<tr><td>${l}</td><td>${r.pre[k].toFixed(1)}</td><td>${r.post[k].toFixed(1)}</td></tr>`).join("");
+  $("vb").innerHTML=`<table><tr><th></th><th>Before</th><th>After</th></tr>${rows}</table><div class="chips">${Object.entries(r.c).map(([k,v])=>`<span class="chip ${v?"t":"f"}">${v?"✓":"✗"} ${k}</span>`).join("")}</div>`}
+function decide(r,cls){lastV=r.rejected?lastV:r;$("dec").textContent=r.msg;$("dec").style.color=r.rejected||r.rolled_back?"var(--bad)":r.verdict==="INCONCLUSIVE"?"var(--warn)":"var(--ok)";render()}
+function loop(){clearInterval(timer);timer=setInterval(()=>{if(running){tick();render()}},1000/speed)}
+function setSpeed(s){speed=s;$("spd").value=String(s);loop()}
+function init(){fresh();for(let i=0;i<3;i++)tick();$("dec").textContent="Decision will appear here.";$("dec").style.color="";$("vp").innerHTML="";$("vb").textContent="No verification has run yet. Apply an intent to see before and after results.";render()}
+
+// ---------- events ----------
+$("str").oninput=e=>$("strv").textContent=(+e.target.value).toFixed(1);
+$("dur").oninput=e=>$("durv").textContent=e.target.value;
+$("apply").onclick=()=>decide(submit("prioritize_work_call",+$("dur").value,+$("str").value));
+$("inject").onclick=()=>{log("failure_test","DELIBERATE TEST injection","test");const before=JSON.stringify(S.w);
+  const r=apply({I:5,S:45,B:50},"test-001",60,false,"Injected harmful candidate.",true);
+  r.msg=`Harmful policy blocked. Rollback restored the previous weights exactly: ${JSON.stringify(S.w)===before}.`;decide(r)};
+$("reset").onclick=()=>{demoId++;init();say("Reset. Ready for a new run.")};
+$("pp").onclick=()=>{running=!running;$("pp").textContent=running?"Pause":"Resume"};
+$("spd").onchange=e=>setSpeed(+e.target.value);
+document.querySelectorAll("#sc button").forEach(b=>b.onclick=()=>{S.sc=b.dataset.s;log("scenario_selected",S.sc,"info");render()});
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click()}
+$("dl-j").onclick=()=>dl("audit_log.json",JSON.stringify(S.audit,null,1),"application/json");
+$("dl-c").onclick=()=>dl("results.csv",["sim_t,scenario,policy_rev,latency_ms,jitter_ms,loss_pct,bg_mbps,debt_bg",...S.rows.map(r=>r.join(","))].join("\n"),"text/csv");
+
+// ---------- guided demo ----------
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+$("demo").onclick=async()=>{
+  const id=++demoId,ok=()=>id===demoId;running=true;$("pp").textContent="Pause";setSpeed(1);init();
+  const step=async(t,ms)=>{if(!ok())return false;say(t);await sleep(ms);return ok()};
+  if(!await step("1. One home connection, competing demands: a big background download versus a work call.",5000))return;
+  if(!await step("Interactive latency is above the 80 ms limit. The call would stutter.",4500))return;
+  if(!await step("2. The user states a temporary intent: prioritize the work call for 60 seconds, strength 0.8.",3500))return;
+  $("str").value=.8;$("strv").textContent="0.8";$("dur").value=60;$("durv").textContent="60";
+  decide(submit("prioritize_work_call",60,.8));
+  if(!await step("The verifier compares before and after in a simulated window. Latency passes and the background floor holds.",7000))return;
+  if(!await step("3. Fairness constraints: latency is protected, background still progresses, debt is tracked.",8000))return;
+  say("4. The simulated controller clock expires the intent automatically (running at 10×).");setSpeed(10);
+  while(ok()&&S.intent)await sleep(200);if(!ok())return;setSpeed(1);
+  if(!await step("The previous normal policy is back, with no manual cleanup.",4500))return;
+  S.sc="severe";log("scenario_selected","severe","info");render();
+  if(!await step("5. Severe congestion on a 40 Mbps link with a maximum-strength request (1.0).",4000))return;
+  decide(submit("prioritize_work_call",60,1.0));
+  if(!await step("Honest result: capacity is the real limit, so this is INCONCLUSIVE rather than a success.",7000))return;
+  if(S.intent){const i=S.intent;S.rev++;S.w={...i.prev};S.intent=null;log("intent_revoked","revoked before next scene","revoked",{intent:i.id})}
+  S.sc="congested";render();
+  if(!await step("6. Fault test: a harmful policy (Interactive weight 5) is injected, bypassing the engine on purpose.",4000))return;
+  $("inject").click();
+  if(!await step("The verifier catches it. Rollback restores the previous policy exactly.",7000))return;
+  say("Done. Every decision is in the audit log below. Save the JSON and CSV for your report. All values are SIMULATED; real enforcement in FairSlice is Linux tc/CAKE.")};
+
+init();loop();
+</script>
+</body>
+</html>
